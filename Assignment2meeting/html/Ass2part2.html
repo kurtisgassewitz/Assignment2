@@ -1,0 +1,1048 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>Part 2: Current Flow in Rectangular Region</title><meta name="generator" content="MATLAB 9.2"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2019-02-24"><meta name="DC.source" content="Ass2part2.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img, h1 img, h2 img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, code { font-size:12px; }
+tt { font-size: 1.2em; }
+pre { margin:0px 0px 20px; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+pre.error { color:red; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h1>Part 2: Current Flow in Rectangular Region</h1><p>The second part of the assignemnt consisted of using the Finite Difference Method to solve for the current flow in a given rectangle. The rectangle had two boxes within the region that were to have a very high resistance. To model the high resistance of the boxes, the regions were assigned to have a low conductivity.</p><pre class="codeinput">close <span class="string">all</span>;
+clear;
+
+Sigma = 1;
+mult = 1;
+
+nx = 50*mult;
+ny = 50*mult;
+
+G = sparse (nx*ny, nx*ny);
+B = zeros(1, nx*ny);
+
+cMap = zeros (nx, ny);
+
+<span class="comment">%Loop to assign Conductivity</span>
+<span class="keyword">for</span> i = 1:nx
+    <span class="keyword">for</span> j = 1:ny
+        <span class="keyword">if</span> (i&gt;=0.4*nx &amp;&amp; i&lt;=0.6*nx &amp;&amp; j&lt;=0.4*ny) || (i&gt;=0.4*nx &amp;&amp; i&lt;=0.6*nx &amp;&amp; j&gt;=0.6*ny)
+            cMap(i,j) = .01;
+        <span class="keyword">else</span>
+            cMap(i,j) = Sigma;
+        <span class="keyword">end</span>
+    <span class="keyword">end</span>
+<span class="keyword">end</span>
+
+<span class="keyword">for</span> i = 1:nx
+    <span class="keyword">for</span> j = 1:ny
+        n = j + (i-1)*ny;
+
+        <span class="keyword">if</span> i == 1
+            G(n, :) = 0;
+            G(n, n) = 1;
+            B(n)    = 1;
+        <span class="keyword">elseif</span> i == nx
+            G(n, :) = 0;
+            G(n, n) = 1;
+        <span class="keyword">elseif</span> j == 1
+            nxm = j + (i - 2)*ny;
+            nxp = j + (i)*ny;
+            nyp = j + 1 + (i - 1)*ny;
+
+            rxm = (cMap(i,j) + cMap(i - 1, j))/2;
+            rxp = (cMap(i,j) + cMap(i + 1, j))/2;
+            ryp = (cMap(i,j) + cMap(i, j + 1))/2;
+
+            G(n, n) = -(rxm + rxp + ryp);
+            G(n, nxm) = rxm;
+            G(n, nxp) = rxp;
+            G(n, nyp) = ryp;
+
+        <span class="keyword">elseif</span> j == ny
+            nxm = j + (i - 2)*ny;
+            nxp = j + (i)*ny;
+            nym = j - 1 + (i - 1)*ny;
+
+            rxm = (cMap(i,j) + cMap(i - 1, j))/2;
+            rxp = (cMap(i,j) + cMap(i + 1, j))/2;
+            rym = (cMap(i,j) + cMap(i, j - 1))/2;
+
+            G(n, n) = -(rxm + rxp + rym);
+            G(n, nxm) = rxm;
+            G(n, nxp) = rxp;
+            G(n, nym) = rym;
+
+        <span class="keyword">else</span>
+
+            nxm = j + (i - 2)*ny;
+            nxp = j + (i)*ny;
+            nym = j - 1 + (i - 1)*ny;
+            nyp = j + 1 + (i - 1)*ny;
+
+            rxm = (cMap(i,j) + cMap(i - 1, j))/2;
+            rxp = (cMap(i,j) + cMap(i + 1, j))/2;
+            rym = (cMap(i,j) + cMap(i, j - 1))/2;
+            ryp = (cMap(i,j) + cMap(i, j + 1))/2;
+
+            G(n, n) = -(rxm + rxp + ryp + rym);
+            G(n, nxm) = rxm;
+            G(n, nxp) = rxp;
+            G(n, nym) = rym;
+            G(n, nyp) = ryp;
+
+        <span class="keyword">end</span>
+
+    <span class="keyword">end</span>
+
+<span class="keyword">end</span>
+
+V = G\B';
+
+vMap = zeros(nx,ny);
+<span class="keyword">for</span> i=1:nx
+    <span class="keyword">for</span> j=1:ny
+        n = j + (i - 1)*ny;
+        vMap(i,j) = V(n);
+    <span class="keyword">end</span>
+<span class="keyword">end</span>
+</pre><p>The conductivity of the region can be seen in the Figure below. Note that within the high resistivity regions the conductivity was assigned a value of 0.01 while elsewhere in the region was assigned a conductivity of 1.</p><pre class="codeinput"><span class="comment">%Plot section</span>
+figure(1);
+surf(cMap);
+title(<span class="string">'Conductivity'</span>);
+xlabel(<span class="string">'L'</span>);
+ylabel(<span class="string">'W'</span>);
+zlabel(<span class="string">'Conductivity'</span>);
+</pre><img vspace="5" hspace="5" src="Ass2part2_01.png" style="width:560px;height:420px;" alt=""> <p>The Finite Difference Method was then applied to solve for the current flow through the region. A voltage map was created for the region and can be seen in the Figure below.</p><pre class="codeinput"><span class="comment">%Potential Plot</span>
+figure(2)
+surf(vMap);
+title(<span class="string">'Voltage'</span>);
+view(0,90);
+</pre><img vspace="5" hspace="5" src="Ass2part2_02.png" style="width:560px;height:420px;" alt=""> <p>The electric field was then determined for the region. The electric field was found by taking the gradient of the voltage matrix. The electric field of the region can be seen in the Figure below.</p><pre class="codeinput"><span class="comment">%Electric Field Plot</span>
+[Ex, Ey] = gradient(vMap);
+figure(3)
+quiver(Ex, Ey);
+title (<span class="string">'Electric Field'</span>);
+</pre><img vspace="5" hspace="5" src="Ass2part2_03.png" style="width:560px;height:420px;" alt=""> <p>The current density for the region was then found as the product of the electric field matrix and the conductivity map of the region. The current desnity for the region can be found in the Figure below.</p><pre class="codeinput">EX = -Ex;
+EY = -Ey;
+
+<span class="comment">%Current Density</span>
+Jx = cMap.*EX;
+Jy = cMap.*EY;
+figure(4)
+quiver(Jx, Jy);
+title(<span class="string">'Current Density'</span>);
+
+<span class="comment">%Curr_Left = sum(Jx(1:ny, 1))</span>
+<span class="comment">%Curr_right = sum(Jx(1:ny, nx))</span>
+</pre><img vspace="5" hspace="5" src="Ass2part2_04.png" style="width:560px;height:420px;" alt=""> <p>The mesh density of the region was then altered to investigate the effects this would have on the current in the region. The current was found as the sum of currents on the edge of the box. The original Mesh density for the region was 50 points in the x direction and 50 points in the y direction. The number of points was multiplied by a 'mesh factor' and the current along the box was recorded at each mesh density.</p><pre class="codeinput"><span class="keyword">for</span> k=1:4
+   mult = k;
+
+    nx = 50*mult;
+    ny = 50*mult;
+
+    G = sparse (nx*ny, nx*ny);
+    B = zeros(1, nx*ny);
+
+    cMap = zeros (nx, ny);
+
+    <span class="comment">%Loop to assign Conductivity</span>
+    <span class="keyword">for</span> i = 1:nx
+        <span class="keyword">for</span> j = 1:ny
+            <span class="keyword">if</span> (i&gt;=0.4*nx &amp;&amp; i&lt;=0.6*nx &amp;&amp; j&lt;=0.4*ny) || (i&gt;=0.4*nx &amp;&amp; i&lt;=0.6*nx &amp;&amp; j&gt;=0.6*ny)
+                cMap(i,j) = .01;
+            <span class="keyword">else</span>
+                cMap(i,j) = Sigma;
+            <span class="keyword">end</span>
+        <span class="keyword">end</span>
+    <span class="keyword">end</span>
+
+    <span class="keyword">for</span> i = 1:nx
+        <span class="keyword">for</span> j = 1:ny
+            n = j + (i-1)*ny;
+
+            <span class="keyword">if</span> i == 1
+                G(n, :) = 0;
+                G(n, n) = 1;
+                B(n)    = 1;
+            <span class="keyword">elseif</span> i == nx
+                G(n, :) = 0;
+                G(n, n) = 1;
+            <span class="keyword">elseif</span> j == 1
+                nxm = j + (i - 2)*ny;
+                nxp = j + (i)*ny;
+                nyp = j + 1 + (i - 1)*ny;
+
+                rxm = (cMap(i,j) + cMap(i - 1, j))/2;
+                rxp = (cMap(i,j) + cMap(i + 1, j))/2;
+                ryp = (cMap(i,j) + cMap(i, j + 1))/2;
+
+                G(n, n) = -(rxm + rxp + ryp);
+                G(n, nxm) = rxm;
+                G(n, nxp) = rxp;
+                G(n, nyp) = ryp;
+
+            <span class="keyword">elseif</span> j == ny
+                nxm = j + (i - 2)*ny;
+                nxp = j + (i)*ny;
+                nym = j - 1 + (i - 1)*ny;
+
+                rxm = (cMap(i,j) + cMap(i - 1, j))/2;
+                rxp = (cMap(i,j) + cMap(i + 1, j))/2;
+                rym = (cMap(i,j) + cMap(i, j - 1))/2;
+
+                G(n, n) = -(rxm + rxp + rym);
+                G(n, nxm) = rxm;
+                G(n, nxp) = rxp;
+                G(n, nym) = rym;
+
+            <span class="keyword">else</span>
+
+                nxm = j + (i - 2)*ny;
+                nxp = j + (i)*ny;
+                nym = j - 1 + (i - 1)*ny;
+                nyp = j + 1 + (i - 1)*ny;
+
+                rxm = (cMap(i,j) + cMap(i - 1, j))/2;
+                rxp = (cMap(i,j) + cMap(i + 1, j))/2;
+                rym = (cMap(i,j) + cMap(i, j - 1))/2;
+                ryp = (cMap(i,j) + cMap(i, j + 1))/2;
+
+                G(n, n) = -(rxm + rxp + ryp + rym);
+                G(n, nxm) = rxm;
+                G(n, nxp) = rxp;
+                G(n, nym) = rym;
+                G(n, nyp) = ryp;
+
+            <span class="keyword">end</span>
+
+        <span class="keyword">end</span>
+
+    <span class="keyword">end</span>
+
+    V = G\B';
+
+    vMap = zeros(nx,ny);
+    <span class="keyword">for</span> i=1:nx
+        <span class="keyword">for</span> j=1:ny
+            n = j + (i - 1)*ny;
+            vMap(i,j) = V(n);
+        <span class="keyword">end</span>
+    <span class="keyword">end</span>
+    [Ex, Ey] = gradient(vMap);
+    EX = -Ex;
+    EY = -Ey;
+    Jx = cMap.*EX;
+    Jy = cMap.*EY;
+    Curr_Left = sum(Jx(1:ny, 1));
+    Curr_right = sum(Jx(1:ny, nx));
+    Curr1(k) = Curr_Left;
+<span class="keyword">end</span>
+
+mult1 = [1 2 3 4];
+</pre><p>The results can be seen in the Figure below. The current increased as the number of points increased, however not linearly. The data suggests a maximum current may be hit as the mesh density increases.</p><pre class="codeinput">figure(5)
+plot(mult1, Curr1, <span class="string">'-o'</span>);
+title(<span class="string">'Current vs Mesh Density'</span>);
+xlabel(<span class="string">'Mesh Multiplication Factor'</span>);
+ylabel(<span class="string">'Current'</span>);
+</pre><img vspace="5" hspace="5" src="Ass2part2_05.png" style="width:560px;height:420px;" alt=""> <p>The width of the bottle neck was then adjusted to determine the effects this would have on the current.</p><pre class="codeinput">counter = 1;
+<span class="keyword">for</span> k=0.3:0.01:0.48
+    mult = k;
+
+    opp = 1 - k;
+    dist = opp - k;
+    dist_array(counter) = dist;
+
+    nx = 50;
+    ny = 50;
+
+    G = sparse (nx*ny, nx*ny);
+    B = zeros(1, nx*ny);
+
+    cMap = zeros (nx, ny);
+
+    <span class="comment">%Loop to assign Conductivity</span>
+    <span class="keyword">for</span> i = 1:nx
+        <span class="keyword">for</span> j = 1:ny
+            <span class="keyword">if</span> (i&gt;=0.4*nx &amp;&amp; i&lt;=0.6*nx &amp;&amp; j&lt;=k*ny) || (i&gt;=0.4*nx &amp;&amp; i&lt;=0.6*nx &amp;&amp; j&gt;=opp*ny)
+                cMap(i,j) = .01;
+            <span class="keyword">else</span>
+                cMap(i,j) = Sigma;
+            <span class="keyword">end</span>
+        <span class="keyword">end</span>
+    <span class="keyword">end</span>
+
+    <span class="keyword">for</span> i = 1:nx
+        <span class="keyword">for</span> j = 1:ny
+            n = j + (i-1)*ny;
+
+            <span class="keyword">if</span> i == 1
+                G(n, :) = 0;
+                G(n, n) = 1;
+                B(n)    = 1;
+            <span class="keyword">elseif</span> i == nx
+                G(n, :) = 0;
+                G(n, n) = 1;
+            <span class="keyword">elseif</span> j == 1
+                nxm = j + (i - 2)*ny;
+                nxp = j + (i)*ny;
+                nyp = j + 1 + (i - 1)*ny;
+
+                rxm = (cMap(i,j) + cMap(i - 1, j))/2;
+                rxp = (cMap(i,j) + cMap(i + 1, j))/2;
+                ryp = (cMap(i,j) + cMap(i, j + 1))/2;
+
+                G(n, n) = -(rxm + rxp + ryp);
+                G(n, nxm) = rxm;
+                G(n, nxp) = rxp;
+                G(n, nyp) = ryp;
+
+            <span class="keyword">elseif</span> j == ny
+                nxm = j + (i - 2)*ny;
+                nxp = j + (i)*ny;
+                nym = j - 1 + (i - 1)*ny;
+
+                rxm = (cMap(i,j) + cMap(i - 1, j))/2;
+                rxp = (cMap(i,j) + cMap(i + 1, j))/2;
+                rym = (cMap(i,j) + cMap(i, j - 1))/2;
+
+                G(n, n) = -(rxm + rxp + rym);
+                G(n, nxm) = rxm;
+                G(n, nxp) = rxp;
+                G(n, nym) = rym;
+
+            <span class="keyword">else</span>
+
+                nxm = j + (i - 2)*ny;
+                nxp = j + (i)*ny;
+                nym = j - 1 + (i - 1)*ny;
+                nyp = j + 1 + (i - 1)*ny;
+
+                rxm = (cMap(i,j) + cMap(i - 1, j))/2;
+                rxp = (cMap(i,j) + cMap(i + 1, j))/2;
+                rym = (cMap(i,j) + cMap(i, j - 1))/2;
+                ryp = (cMap(i,j) + cMap(i, j + 1))/2;
+
+                G(n, n) = -(rxm + rxp + ryp + rym);
+                G(n, nxm) = rxm;
+                G(n, nxp) = rxp;
+                G(n, nym) = rym;
+                G(n, nyp) = ryp;
+
+            <span class="keyword">end</span>
+
+        <span class="keyword">end</span>
+
+    <span class="keyword">end</span>
+
+    V = G\B';
+
+    vMap = zeros(nx,ny);
+    <span class="keyword">for</span> i=1:nx
+        <span class="keyword">for</span> j=1:ny
+            n = j + (i - 1)*ny;
+            vMap(i,j) = V(n);
+        <span class="keyword">end</span>
+    <span class="keyword">end</span>
+    [Ex, Ey] = gradient(vMap);
+    EX = -Ex;
+    EY = -Ey;
+    Jx = cMap.*Ex;
+    Jy = cMap.*Ey;
+    Curr_Left = sum(Jx(1:ny, 1));
+    Curr_right = sum(Jx(1:ny, nx));
+    Curr2(counter) = Curr_Left;
+    counter = counter + 1;
+<span class="keyword">end</span>
+</pre><p>The distance between the two low conductivity regions was increased and the resulting currents may be seen in the figure below. The current at the edge of the box increased as the distance between the two low conductivity regions increased which makes sense given that more current is able to flow through the region.</p><pre class="codeinput">figure(6)
+plot(dist_array, Curr2, <span class="string">'-o'</span>);
+title(<span class="string">'Current vs Bottle Neck Width'</span>);
+xlabel(<span class="string">'Bottle Neck Width'</span>);
+ylabel(<span class="string">'Current'</span>);
+</pre><img vspace="5" hspace="5" src="Ass2part2_06.png" style="width:560px;height:420px;" alt=""> <p>The conductivity of the box was then altered to determine how this would affect the this would affect the current flow through the edge of the box.</p><pre class="codeinput">counter2 = 1;
+<span class="keyword">for</span> k=0.2:0.2:3
+    Sigma = k;
+    Conductivity(counter2) = Sigma;
+    nx = 50;
+    ny = 50;
+
+    G = sparse (nx*ny, nx*ny);
+    B = zeros(1, nx*ny);
+
+    cMap = zeros (nx, ny);
+
+    <span class="comment">%Loop to assign Conductivity</span>
+    <span class="keyword">for</span> i = 1:nx
+        <span class="keyword">for</span> j = 1:ny
+            <span class="keyword">if</span> (i&gt;=0.4*nx &amp;&amp; i&lt;=0.6*nx &amp;&amp; j&lt;=0.4*ny) || (i&gt;=0.4*nx &amp;&amp; i&lt;=0.6*nx &amp;&amp; j&gt;=0.6*ny)
+                cMap(i,j) = .01;
+            <span class="keyword">else</span>
+                cMap(i,j) = Sigma;
+            <span class="keyword">end</span>
+        <span class="keyword">end</span>
+    <span class="keyword">end</span>
+
+    <span class="keyword">for</span> i = 1:nx
+        <span class="keyword">for</span> j = 1:ny
+            n = j + (i-1)*ny;
+
+            <span class="keyword">if</span> i == 1
+                G(n, :) = 0;
+                G(n, n) = 1;
+                B(n)    = 1;
+            <span class="keyword">elseif</span> i == nx
+                G(n, :) = 0;
+                G(n, n) = 1;
+            <span class="keyword">elseif</span> j == 1
+                nxm = j + (i - 2)*ny;
+                nxp = j + (i)*ny;
+                nyp = j + 1 + (i - 1)*ny;
+
+                rxm = (cMap(i,j) + cMap(i - 1, j))/2;
+                rxp = (cMap(i,j) + cMap(i + 1, j))/2;
+                ryp = (cMap(i,j) + cMap(i, j + 1))/2;
+
+                G(n, n) = -(rxm + rxp + ryp);
+                G(n, nxm) = rxm;
+                G(n, nxp) = rxp;
+                G(n, nyp) = ryp;
+
+            <span class="keyword">elseif</span> j == ny
+                nxm = j + (i - 2)*ny;
+                nxp = j + (i)*ny;
+                nym = j - 1 + (i - 1)*ny;
+
+                rxm = (cMap(i,j) + cMap(i - 1, j))/2;
+                rxp = (cMap(i,j) + cMap(i + 1, j))/2;
+                rym = (cMap(i,j) + cMap(i, j - 1))/2;
+
+                G(n, n) = -(rxm + rxp + rym);
+                G(n, nxm) = rxm;
+                G(n, nxp) = rxp;
+                G(n, nym) = rym;
+
+            <span class="keyword">else</span>
+
+                nxm = j + (i - 2)*ny;
+                nxp = j + (i)*ny;
+                nym = j - 1 + (i - 1)*ny;
+                nyp = j + 1 + (i - 1)*ny;
+
+                rxm = (cMap(i,j) + cMap(i - 1, j))/2;
+                rxp = (cMap(i,j) + cMap(i + 1, j))/2;
+                rym = (cMap(i,j) + cMap(i, j - 1))/2;
+                ryp = (cMap(i,j) + cMap(i, j + 1))/2;
+
+                G(n, n) = -(rxm + rxp + ryp + rym);
+                G(n, nxm) = rxm;
+                G(n, nxp) = rxp;
+                G(n, nym) = rym;
+                G(n, nyp) = ryp;
+
+            <span class="keyword">end</span>
+
+        <span class="keyword">end</span>
+
+    <span class="keyword">end</span>
+
+    V = G\B';
+
+    vMap = zeros(nx,ny);
+    <span class="keyword">for</span> i=1:nx
+        <span class="keyword">for</span> j=1:ny
+            n = j + (i - 1)*ny;
+            vMap(i,j) = V(n);
+        <span class="keyword">end</span>
+    <span class="keyword">end</span>
+    [Ex, Ey] = gradient(vMap);
+    EX = -Ex;
+    EY = -Ey;
+    Jx = cMap.*EX;
+    Jy = cMap.*EY;
+    Curr_Left = sum(Jx(1:ny, 1));
+    Curr_right = sum(Jx(1:ny, nx));
+    Curr3(counter2) = Curr_Left;
+    counter2 = counter2 + 1;
+<span class="keyword">end</span>
+</pre><p>Unsuprisingly, there was a direct linear correlation between the conductivity of the box and the current flowing through the edge of the box. The resulting graph can be seen in the figure below.</p><pre class="codeinput">figure(7);
+plot(Conductivity, Curr3, <span class="string">'-o'</span>);
+title(<span class="string">'Current vs Conductivity of Box'</span>);
+xlabel(<span class="string">'Conductivity of Box'</span>);
+ylabel(<span class="string">'Current'</span>);
+</pre><img vspace="5" hspace="5" src="Ass2part2_07.png" style="width:560px;height:420px;" alt=""> <p class="footer"><br><a href="http://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2017a</a><br></p></div><!--
+##### SOURCE BEGIN #####
+%% Part 2: Current Flow in Rectangular Region
+% The second part of the assignemnt consisted of using the Finite Difference 
+% Method to solve for the current flow in a given rectangle. The rectangle had 
+% two boxes within the region that were to have a very high resistance. To model 
+% the high resistance of the boxes, the regions were assigned to have a low conductivity.  
+
+close all;
+clear;
+
+Sigma = 1;
+mult = 1;
+
+nx = 50*mult;
+ny = 50*mult;
+
+G = sparse (nx*ny, nx*ny);
+B = zeros(1, nx*ny);
+
+cMap = zeros (nx, ny);
+
+%Loop to assign Conductivity
+for i = 1:nx
+    for j = 1:ny
+        if (i>=0.4*nx && i<=0.6*nx && j<=0.4*ny) || (i>=0.4*nx && i<=0.6*nx && j>=0.6*ny)
+            cMap(i,j) = .01;
+        else
+            cMap(i,j) = Sigma;
+        end   
+    end
+end
+
+for i = 1:nx
+    for j = 1:ny
+        n = j + (i-1)*ny;
+        
+        if i == 1
+            G(n, :) = 0;
+            G(n, n) = 1;
+            B(n)    = 1;
+        elseif i == nx
+            G(n, :) = 0;
+            G(n, n) = 1;
+        elseif j == 1
+            nxm = j + (i - 2)*ny;
+            nxp = j + (i)*ny;
+            nyp = j + 1 + (i - 1)*ny;
+            
+            rxm = (cMap(i,j) + cMap(i - 1, j))/2;
+            rxp = (cMap(i,j) + cMap(i + 1, j))/2;
+            ryp = (cMap(i,j) + cMap(i, j + 1))/2;
+            
+            G(n, n) = -(rxm + rxp + ryp);
+            G(n, nxm) = rxm;
+            G(n, nxp) = rxp;
+            G(n, nyp) = ryp;
+            
+        elseif j == ny
+            nxm = j + (i - 2)*ny;
+            nxp = j + (i)*ny;
+            nym = j - 1 + (i - 1)*ny;
+            
+            rxm = (cMap(i,j) + cMap(i - 1, j))/2;
+            rxp = (cMap(i,j) + cMap(i + 1, j))/2;
+            rym = (cMap(i,j) + cMap(i, j - 1))/2;
+        
+            G(n, n) = -(rxm + rxp + rym);
+            G(n, nxm) = rxm;
+            G(n, nxp) = rxp;
+            G(n, nym) = rym;
+            
+        else
+            
+            nxm = j + (i - 2)*ny;
+            nxp = j + (i)*ny;
+            nym = j - 1 + (i - 1)*ny;
+            nyp = j + 1 + (i - 1)*ny;
+            
+            rxm = (cMap(i,j) + cMap(i - 1, j))/2;
+            rxp = (cMap(i,j) + cMap(i + 1, j))/2;
+            rym = (cMap(i,j) + cMap(i, j - 1))/2;
+            ryp = (cMap(i,j) + cMap(i, j + 1))/2;
+        
+            G(n, n) = -(rxm + rxp + ryp + rym);
+            G(n, nxm) = rxm;
+            G(n, nxp) = rxp;
+            G(n, nym) = rym;
+            G(n, nyp) = ryp;
+            
+        end
+        
+    end
+    
+end
+
+V = G\B';
+
+vMap = zeros(nx,ny);
+for i=1:nx
+    for j=1:ny
+        n = j + (i - 1)*ny;
+        vMap(i,j) = V(n);
+    end
+end
+
+%% 
+% The conductivity of the region can be seen in the Figure below. Note that within the high resistivity regions the conductivity was assigned a value of 0.01 while elsewhere in the region was assigned a conductivity of 1.
+
+%Plot section
+figure(1);
+surf(cMap);
+title('Conductivity');
+xlabel('L');
+ylabel('W');
+zlabel('Conductivity');
+%% 
+% The Finite Difference Method was then applied to solve for the current
+% flow through the region. A voltage map was created for the region and can
+% be seen in the Figure below. 
+
+%Potential Plot
+figure(2)
+surf(vMap);
+title('Voltage');
+view(0,90);
+
+%% 
+% The electric field was then determined for the region. The electric field was found by taking the gradient of the voltage matrix. 
+% The electric field of the region can be seen in the Figure below. 
+
+%Electric Field Plot
+[Ex, Ey] = gradient(vMap);
+figure(3)
+quiver(Ex, Ey);
+title ('Electric Field');
+
+
+%% 
+% The current density for the region was then found as the product of the
+% electric field matrix and the conductivity map of the region. The current
+% desnity for the region can be found in the Figure below. 
+
+EX = -Ex;
+EY = -Ey;
+
+%Current Density
+Jx = cMap.*EX;
+Jy = cMap.*EY;
+figure(4)
+quiver(Jx, Jy);
+title('Current Density');
+
+%Curr_Left = sum(Jx(1:ny, 1)) 
+%Curr_right = sum(Jx(1:ny, nx))
+
+%% 
+% The mesh density of the region was then altered to investigate the effects this would have on the current in the region. 
+% The current was found as the sum of currents on the edge of the box. The original Mesh density for the region was 50 points in the 
+% x direction and 50 points in the y direction. The number of points was multiplied by a 'mesh factor' and the current along the box was recorded at each mesh density. 
+
+for k=1:4
+   mult = k;
+
+    nx = 50*mult;
+    ny = 50*mult;
+
+    G = sparse (nx*ny, nx*ny);
+    B = zeros(1, nx*ny);
+
+    cMap = zeros (nx, ny);
+
+    %Loop to assign Conductivity
+    for i = 1:nx
+        for j = 1:ny
+            if (i>=0.4*nx && i<=0.6*nx && j<=0.4*ny) || (i>=0.4*nx && i<=0.6*nx && j>=0.6*ny)
+                cMap(i,j) = .01;
+            else
+                cMap(i,j) = Sigma;
+            end   
+        end
+    end
+
+    for i = 1:nx
+        for j = 1:ny
+            n = j + (i-1)*ny;
+
+            if i == 1
+                G(n, :) = 0;
+                G(n, n) = 1;
+                B(n)    = 1;
+            elseif i == nx
+                G(n, :) = 0;
+                G(n, n) = 1;
+            elseif j == 1
+                nxm = j + (i - 2)*ny;
+                nxp = j + (i)*ny;
+                nyp = j + 1 + (i - 1)*ny;
+
+                rxm = (cMap(i,j) + cMap(i - 1, j))/2;
+                rxp = (cMap(i,j) + cMap(i + 1, j))/2;
+                ryp = (cMap(i,j) + cMap(i, j + 1))/2;
+
+                G(n, n) = -(rxm + rxp + ryp);
+                G(n, nxm) = rxm;
+                G(n, nxp) = rxp;
+                G(n, nyp) = ryp;
+
+            elseif j == ny
+                nxm = j + (i - 2)*ny;
+                nxp = j + (i)*ny;
+                nym = j - 1 + (i - 1)*ny;
+
+                rxm = (cMap(i,j) + cMap(i - 1, j))/2;
+                rxp = (cMap(i,j) + cMap(i + 1, j))/2;
+                rym = (cMap(i,j) + cMap(i, j - 1))/2;
+
+                G(n, n) = -(rxm + rxp + rym);
+                G(n, nxm) = rxm;
+                G(n, nxp) = rxp;
+                G(n, nym) = rym;
+
+            else
+
+                nxm = j + (i - 2)*ny;
+                nxp = j + (i)*ny;
+                nym = j - 1 + (i - 1)*ny;
+                nyp = j + 1 + (i - 1)*ny;
+
+                rxm = (cMap(i,j) + cMap(i - 1, j))/2;
+                rxp = (cMap(i,j) + cMap(i + 1, j))/2;
+                rym = (cMap(i,j) + cMap(i, j - 1))/2;
+                ryp = (cMap(i,j) + cMap(i, j + 1))/2;
+
+                G(n, n) = -(rxm + rxp + ryp + rym);
+                G(n, nxm) = rxm;
+                G(n, nxp) = rxp;
+                G(n, nym) = rym;
+                G(n, nyp) = ryp;
+
+            end
+
+        end
+
+    end
+
+    V = G\B';
+
+    vMap = zeros(nx,ny);
+    for i=1:nx
+        for j=1:ny
+            n = j + (i - 1)*ny;
+            vMap(i,j) = V(n);
+        end
+    end
+    [Ex, Ey] = gradient(vMap);
+    EX = -Ex;
+    EY = -Ey;
+    Jx = cMap.*EX;
+    Jy = cMap.*EY;
+    Curr_Left = sum(Jx(1:ny, 1));
+    Curr_right = sum(Jx(1:ny, nx));
+    Curr1(k) = Curr_Left;
+end
+
+mult1 = [1 2 3 4];
+%% 
+% The results can be seen in the Figure below. The current increased as the number of points increased, however not linearly. 
+% The data suggests a maximum current may be hit as the mesh density increases. 
+
+figure(5)
+plot(mult1, Curr1, '-o');
+title('Current vs Mesh Density');
+xlabel('Mesh Multiplication Factor');
+ylabel('Current');
+
+%%
+% The width of the bottle neck was then adjusted to determine the effects this would have on the current. 
+
+counter = 1;
+for k=0.3:0.01:0.48
+    mult = k;
+    
+    opp = 1 - k;
+    dist = opp - k;
+    dist_array(counter) = dist;
+  
+    nx = 50;
+    ny = 50;
+
+    G = sparse (nx*ny, nx*ny);
+    B = zeros(1, nx*ny);
+
+    cMap = zeros (nx, ny);
+
+    %Loop to assign Conductivity
+    for i = 1:nx
+        for j = 1:ny
+            if (i>=0.4*nx && i<=0.6*nx && j<=k*ny) || (i>=0.4*nx && i<=0.6*nx && j>=opp*ny)
+                cMap(i,j) = .01;
+            else
+                cMap(i,j) = Sigma;
+            end   
+        end
+    end
+
+    for i = 1:nx
+        for j = 1:ny
+            n = j + (i-1)*ny;
+
+            if i == 1
+                G(n, :) = 0;
+                G(n, n) = 1;
+                B(n)    = 1;
+            elseif i == nx
+                G(n, :) = 0;
+                G(n, n) = 1;
+            elseif j == 1
+                nxm = j + (i - 2)*ny;
+                nxp = j + (i)*ny;
+                nyp = j + 1 + (i - 1)*ny;
+
+                rxm = (cMap(i,j) + cMap(i - 1, j))/2;
+                rxp = (cMap(i,j) + cMap(i + 1, j))/2;
+                ryp = (cMap(i,j) + cMap(i, j + 1))/2;
+
+                G(n, n) = -(rxm + rxp + ryp);
+                G(n, nxm) = rxm;
+                G(n, nxp) = rxp;
+                G(n, nyp) = ryp;
+
+            elseif j == ny
+                nxm = j + (i - 2)*ny;
+                nxp = j + (i)*ny;
+                nym = j - 1 + (i - 1)*ny;
+
+                rxm = (cMap(i,j) + cMap(i - 1, j))/2;
+                rxp = (cMap(i,j) + cMap(i + 1, j))/2;
+                rym = (cMap(i,j) + cMap(i, j - 1))/2;
+
+                G(n, n) = -(rxm + rxp + rym);
+                G(n, nxm) = rxm;
+                G(n, nxp) = rxp;
+                G(n, nym) = rym;
+
+            else
+
+                nxm = j + (i - 2)*ny;
+                nxp = j + (i)*ny;
+                nym = j - 1 + (i - 1)*ny;
+                nyp = j + 1 + (i - 1)*ny;
+
+                rxm = (cMap(i,j) + cMap(i - 1, j))/2;
+                rxp = (cMap(i,j) + cMap(i + 1, j))/2;
+                rym = (cMap(i,j) + cMap(i, j - 1))/2;
+                ryp = (cMap(i,j) + cMap(i, j + 1))/2;
+
+                G(n, n) = -(rxm + rxp + ryp + rym);
+                G(n, nxm) = rxm;
+                G(n, nxp) = rxp;
+                G(n, nym) = rym;
+                G(n, nyp) = ryp;
+
+            end
+
+        end
+
+    end
+
+    V = G\B';
+
+    vMap = zeros(nx,ny);
+    for i=1:nx
+        for j=1:ny
+            n = j + (i - 1)*ny;
+            vMap(i,j) = V(n);
+        end
+    end
+    [Ex, Ey] = gradient(vMap);
+    EX = -Ex;
+    EY = -Ey;
+    Jx = cMap.*Ex;
+    Jy = cMap.*Ey;
+    Curr_Left = sum(Jx(1:ny, 1));
+    Curr_right = sum(Jx(1:ny, nx));
+    Curr2(counter) = Curr_Left;
+    counter = counter + 1;
+end
+
+%% 
+% The distance between the two low conductivity regions was increased and the resulting currents may be seen in the figure below. 
+% The current at the edge of the box increased as the distance between the two low conductivity regions increased which makes sense given that more current is able to flow through the region. 
+
+figure(6)
+plot(dist_array, Curr2, '-o');
+title('Current vs Bottle Neck Width');
+xlabel('Bottle Neck Width');
+ylabel('Current');
+
+%% 
+% The conductivity of the box was then altered to determine how this would affect the this would affect the current flow through the edge of the box.
+counter2 = 1;
+for k=0.2:0.2:3
+    Sigma = k;
+    Conductivity(counter2) = Sigma;
+    nx = 50;
+    ny = 50;
+    
+    G = sparse (nx*ny, nx*ny);
+    B = zeros(1, nx*ny);
+
+    cMap = zeros (nx, ny);
+
+    %Loop to assign Conductivity
+    for i = 1:nx
+        for j = 1:ny
+            if (i>=0.4*nx && i<=0.6*nx && j<=0.4*ny) || (i>=0.4*nx && i<=0.6*nx && j>=0.6*ny)
+                cMap(i,j) = .01;
+            else
+                cMap(i,j) = Sigma;
+            end   
+        end
+    end
+
+    for i = 1:nx
+        for j = 1:ny
+            n = j + (i-1)*ny;
+
+            if i == 1
+                G(n, :) = 0;
+                G(n, n) = 1;
+                B(n)    = 1;
+            elseif i == nx
+                G(n, :) = 0;
+                G(n, n) = 1;
+            elseif j == 1
+                nxm = j + (i - 2)*ny;
+                nxp = j + (i)*ny;
+                nyp = j + 1 + (i - 1)*ny;
+
+                rxm = (cMap(i,j) + cMap(i - 1, j))/2;
+                rxp = (cMap(i,j) + cMap(i + 1, j))/2;
+                ryp = (cMap(i,j) + cMap(i, j + 1))/2;
+
+                G(n, n) = -(rxm + rxp + ryp);
+                G(n, nxm) = rxm;
+                G(n, nxp) = rxp;
+                G(n, nyp) = ryp;
+
+            elseif j == ny
+                nxm = j + (i - 2)*ny;
+                nxp = j + (i)*ny;
+                nym = j - 1 + (i - 1)*ny;
+
+                rxm = (cMap(i,j) + cMap(i - 1, j))/2;
+                rxp = (cMap(i,j) + cMap(i + 1, j))/2;
+                rym = (cMap(i,j) + cMap(i, j - 1))/2;
+
+                G(n, n) = -(rxm + rxp + rym);
+                G(n, nxm) = rxm;
+                G(n, nxp) = rxp;
+                G(n, nym) = rym;
+
+            else
+
+                nxm = j + (i - 2)*ny;
+                nxp = j + (i)*ny;
+                nym = j - 1 + (i - 1)*ny;
+                nyp = j + 1 + (i - 1)*ny;
+
+                rxm = (cMap(i,j) + cMap(i - 1, j))/2;
+                rxp = (cMap(i,j) + cMap(i + 1, j))/2;
+                rym = (cMap(i,j) + cMap(i, j - 1))/2;
+                ryp = (cMap(i,j) + cMap(i, j + 1))/2;
+
+                G(n, n) = -(rxm + rxp + ryp + rym);
+                G(n, nxm) = rxm;
+                G(n, nxp) = rxp;
+                G(n, nym) = rym;
+                G(n, nyp) = ryp;
+
+            end
+
+        end
+
+    end
+
+    V = G\B';
+
+    vMap = zeros(nx,ny);
+    for i=1:nx
+        for j=1:ny
+            n = j + (i - 1)*ny;
+            vMap(i,j) = V(n);
+        end
+    end
+    [Ex, Ey] = gradient(vMap);
+    EX = -Ex;
+    EY = -Ey;
+    Jx = cMap.*EX;
+    Jy = cMap.*EY;
+    Curr_Left = sum(Jx(1:ny, 1));
+    Curr_right = sum(Jx(1:ny, nx));
+    Curr3(counter2) = Curr_Left;
+    counter2 = counter2 + 1;
+end
+
+%% 
+% Unsuprisingly, there was a direct linear correlation between the conductivity of the box and the current flowing through the edge of the box. 
+% The resulting graph can be seen in the figure below. 
+
+figure(7);
+plot(Conductivity, Curr3, '-o');
+title('Current vs Conductivity of Box');
+xlabel('Conductivity of Box');
+ylabel('Current');
+
+
+##### SOURCE END #####
+--></body></html>
